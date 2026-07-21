@@ -97,6 +97,34 @@ export class CognitiveCore {
     return surprise;
   }
 
+  // パラメトリック予測分布を返す（学習しない）。h は前進する。
+  // 双方向ループで memory の事前分布とブレンドするために使う。
+  predict(encoder, idx) {
+    const { D, H } = this;
+    const V = encoder.size; this.V = V;
+    const x = encoder.E.subarray(idx * D, idx * D + D);
+    const hPrev = this.h;
+    const hNew = new Float32Array(H);
+    for (let i = 0; i < H; i++) {
+      let sum = this.bh[i];
+      const wr = i * D; for (let d = 0; d < D; d++) sum += this.Wxh[wr + d] * x[d];
+      const hr = i * H; for (let j = 0; j < H; j++) sum += this.Whh[hr + j] * hPrev[j];
+      hNew[i] = Math.tanh(sum);
+    }
+    const probs = new Float32Array(V);
+    let mx = -Infinity;
+    for (let v = 0; v < V; v++) {
+      let sum = this.by[v]; const r = v * H;
+      for (let i = 0; i < H; i++) sum += this.Why[r + i] * hNew[i];
+      probs[v] = sum; if (sum > mx) mx = sum;
+    }
+    let Z = 0;
+    for (let v = 0; v < V; v++) { probs[v] = Math.exp(probs[v] - mx); Z += probs[v]; }
+    for (let v = 0; v < V; v++) probs[v] /= Z;
+    this.h = hNew;
+    return probs;
+  }
+
   // --- 直列化（有効語彙行のみ。bit 一致復元）--------------------------------
   serialize() {
     const { D, H, vocabCap, V } = this;

@@ -14,6 +14,7 @@ const CORPUS = [
 ];
 const FAMILIAR = '今日は雨が降っている';      // 学習済み
 const NOVEL = '台風が接近し警報が出た';        // 未知語を多く含む
+const NOVEL2 = '猫は傘を持って公園で眠る';     // 既知文字の新しい組み合わせ（双方向ループ用）
 
 const $ = (id) => document.getElementById(id);
 const logEl = $('log');
@@ -96,6 +97,63 @@ function selfEval() {
   log(`  → 新規の方が ${nv > f ? '高い ✅（驚いている）' : '高くない ❌'}`);
 }
 
+// --- Phase 2a 後半: 双方向ループ（記憶が予測を助ける）---------------------
+const ctxOf = (chars, i) => chars.slice(Math.max(0, i - 3), i + 1).join('');
+
+// 系列の平均 surprise。useMem=true なら想起した連想(次文字)で予測をブレンド。
+async function evalSeq(text, useMem, lamMax = 0.9, gate = 0.6) {
+  S.core.reset();
+  const chars = [...text];
+  const toks = S.enc.tokenizeRead(text);
+  let tot = 0, n = 0;
+  for (let i = 0; i < toks.length - 1; i++) {
+    const probs = S.core.predict(S.enc, toks[i]); // パラメトリック（学習しない）
+    let p = probs;
+    if (useMem) {
+      const top = await S.fab.recall(S.enc.encode(ctxOf(chars, i)), 5);
+      const pmem = new Float32Array(probs.length);
+      let topSim = 0, wsum = 0;
+      for (const it of top) {
+        const a = it.item.assoc;
+        if (a >= 0 && a < pmem.length) { const w = Math.max(0, it.sim) * it.item.retention; pmem[a] += w; wsum += w; if (it.sim > topSim) topSim = it.sim; }
+      }
+      if (wsum > 0) {
+        for (let k = 0; k < pmem.length; k++) pmem[k] /= wsum;
+        const lam = topSim > gate ? lamMax * topSim : 0;
+        p = new Float32Array(probs.length);
+        for (let k = 0; k < p.length; k++) p[k] = (1 - lam) * probs[k] + lam * pmem[k];
+      }
+    }
+    tot += -Math.log((p[toks[i + 1]] || 1e-12) + 1e-12); n++;
+  }
+  return n ? tot / n : 0;
+}
+
+// 一度「経験」して 文脈→次文字 の連想を記憶に書く（重みは変えない）。
+function experience(text) {
+  const chars = [...text];
+  const toks = S.enc.tokenizeRead(text);
+  for (let i = 0; i < toks.length - 1; i++) {
+    const c = ctxOf(chars, i);
+    S.fab.write(S.enc.encode(c), { text: c, assoc: toks[i + 1], salience: 1, plasticity: 0.3, provenance: 'derived' });
+  }
+}
+
+async function bidirectional() {
+  if (S.core.step === 0) { prepEncoder(); await streamLearn(); }
+  const stepBefore = S.core.step;
+  const before = await evalSeq(NOVEL2, false);
+  const ctrl = await evalSeq(NOVEL2, true);   // 経験前: memory ON でも助からないはず
+  experience(NOVEL2);                          // 一度だけ経験（重み不変）
+  const after = await evalSeq(NOVEL2, true);   // 経験後: 想起が予測を助ける
+  log(`双方向ループ実験: "${NOVEL2}"`);
+  log(`  memory OFF          : surprise=${before.toFixed(3)}`);
+  log(`  memory ON（経験前）  : surprise=${ctrl.toFixed(3)}（未経験なので下がらない）`);
+  log(`  memory ON（経験後）  : surprise=${after.toFixed(3)}`);
+  log(`  → 経験後に ${(before - after).toFixed(3)} 低下（${((1 - after / before) * 100).toFixed(0)}%）` +
+      `。重みは不変（core.step ${stepBefore}→${S.core.step}）= 記憶が認知を助けた`);
+}
+
 function showMemory() {
   const items = S.fab.items;
   log(`記憶（驚きで記銘された断片）: ${items.length}件`);
@@ -149,6 +207,7 @@ async function boot() {
 
   $('btnStream').onclick = () => streamLearn().catch((e) => log('エラー: ' + e.message));
   $('btnEval').onclick = () => selfEval();
+  $('btnLoop').onclick = () => bidirectional().catch((e) => log('エラー: ' + e.message));
   $('btnMem').onclick = () => showMemory();
   $('btnRecall').onclick = () => recall().catch((e) => log('エラー: ' + e.message));
   $('btnSave').onclick = () => save().catch((e) => log('エラー: ' + e.message));

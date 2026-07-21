@@ -9,7 +9,7 @@
 // 想起の類似度計算（クエリ × 全記憶）は Runtime の matmul を使う。これは将来
 // GPU 常駐に載せたい"大きめの計算"であり、Runtime 抽象をここで行使する。
 
-const MAGIC = 0x4241464d; // "BAFM"
+const MAGIC = 0x4241464e; // "BAFN"（assoc 追加で形式更新）
 const PROV = ['perception', 'derived', 'pack'];
 
 const now = () => (typeof performance !== 'undefined' && performance.now
@@ -39,6 +39,7 @@ export class MemoryFabric {
       createdAt: t,
       lastAccess: t,
       accessCount: 0,
+      assoc: attrs.assoc ?? -1, // 連想値（例: 次文字のトークンID）。-1 = なし
       text: attrs.text ?? '',
     };
     this.items.push(item);
@@ -98,8 +99,8 @@ export class MemoryFabric {
     const D = this.D;
     const enc = new TextEncoder();
     const textBytes = this.items.map((it) => enc.encode(it.text || ''));
-    const perItem = (i) => 4 * 4 + 4 * 3 + 8 * 2 + D * 4 + textBytes[i].length;
-    //                 id/prov/acc/textLen  plast/ret/sal  created/last  vector  text
+    const perItem = (i) => 4 * 5 + 4 * 3 + 8 * 2 + D * 4 + textBytes[i].length;
+    //             id/prov/acc/textLen/assoc  plast/ret/sal  created/last  vector  text
     let total = 32; // header
     for (let i = 0; i < this.items.length; i++) total += perItem(i);
     const buf = new ArrayBuffer(total);
@@ -119,6 +120,7 @@ export class MemoryFabric {
       dv.setInt32(off, PROV.indexOf(it.provenance) < 0 ? 0 : PROV.indexOf(it.provenance), true); off += 4;
       dv.setInt32(off, it.accessCount, true); off += 4;
       dv.setInt32(off, tb.length, true); off += 4;
+      dv.setInt32(off, it.assoc ?? -1, true); off += 4;
       dv.setFloat32(off, it.plasticity, true); off += 4;
       dv.setFloat32(off, it.retention, true); off += 4;
       dv.setFloat32(off, it.salience, true); off += 4;
@@ -149,6 +151,7 @@ export class MemoryFabric {
       const prov = dv.getInt32(off, true); off += 4;
       const accessCount = dv.getInt32(off, true); off += 4;
       const textLen = dv.getInt32(off, true); off += 4;
+      const assoc = dv.getInt32(off, true); off += 4;
       const plasticity = dv.getFloat32(off, true); off += 4;
       const retention = dv.getFloat32(off, true); off += 4;
       const salience = dv.getFloat32(off, true); off += 4;
@@ -158,7 +161,7 @@ export class MemoryFabric {
       for (let d = 0; d < D; d++) { vector[d] = dv.getFloat32(off, true); off += 4; }
       const text = textLen ? dec.decode(new Uint8Array(buf, off, textLen)) : ''; off += textLen;
       fabric.items.push({
-        id, provenance: PROV[prov] || 'perception', accessCount,
+        id, provenance: PROV[prov] || 'perception', accessCount, assoc,
         plasticity, retention, salience, createdAt, lastAccess, vector, text,
       });
     }
