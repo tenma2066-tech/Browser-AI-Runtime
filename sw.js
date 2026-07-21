@@ -6,7 +6,7 @@
 //
 // 注: 以前は cache-first だったため、ホーム画面 PWA が古いキャッシュを返して
 //     いた。network-first に変更し、CACHE 名も上げて旧キャッシュを破棄する。
-const CACHE = 'bai-v6';
+const CACHE = 'bai-v7';
 
 const ASSETS = [
   './',
@@ -14,6 +14,7 @@ const ASSETS = [
   './phase0.html',
   './phase1.html',
   './phase2.html',
+  './phase2b.html',
   './manifest.webmanifest',
   './icon.svg',
   './src/probe/main.js',
@@ -28,6 +29,10 @@ const ASSETS = [
   './src/app/phase1.js',
   './src/cognition/core.js',
   './src/app/phase2.js',
+  './src/represent/substrate.js',
+  './src/app/phase2b.js',
+  // 注: models/substrate-*（約7MB）はプリキャッシュしない。オンデマンド fetch で
+  // 取得し、network-first の fetch ハンドラが機会的にキャッシュする。
 ];
 
 self.addEventListener('install', (e) => {
