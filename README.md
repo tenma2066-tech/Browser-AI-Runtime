@@ -19,7 +19,7 @@ HTML / CSS / JavaScript(TypeScript) のみで動く、**完全クライアント
 | Phase | 内容 | 状態 |
 |---|---|---|
 | **Phase 0** | 技術検証: iOS PWA で GPU 学習ループ + 永続化/復元 | ✅ **実機合格**（2026-07-21） |
-| **Phase 1** | Representation（自作エンコーダ）+ Memory Fabric 最小 | 🟡 実装済み・Node検証済み／**iOS実機確認 待ち** |
+| **Phase 1** | Representation（自作エンコーダ）+ Memory Fabric 最小 | ✅ **実機合格**（2026-07-21） |
 | Phase 2 | Cognitive Core + substrate 差し込み + 学習ループを閉じる | ⬜ 設計待ち |
 | Phase 3 | Meta Cognition（予測誤差ベースの自己制御） | ⬜ |
 | Phase 4 | AI Reporter を最初のアプリとして載せる | ⬜ |
@@ -64,7 +64,7 @@ HTML / CSS / JavaScript(TypeScript) のみで動く、**完全クライアント
 
 ## これからの詳細計画
 
-### Phase 1（実装済み・iOS実機確認待ち）
+### Phase 1（✅ 実機合格）
 
 - **Representation**: 自作の軽量エンコーダ（char 単位 CBOW オンライン学習、
   IDF 重み付けで内容語を強調）。
@@ -73,7 +73,7 @@ HTML / CSS / JavaScript(TypeScript) のみで動く、**完全クライアント
 - **永続化**: OPFS 優先の汎用 keyed ストア。encoder / memory を bit 一致で復元。
 - 受け入れ条件・結果は [`docs/phase-1-spec.md`](docs/phase-1-spec.md) /
   [`docs/phase-1-results.md`](docs/phase-1-results.md)。
-- **残タスク**: iOS 実機で 学習→記銘→想起→忘却→保存/復元 の再現確認。
+- iOS 実機で全条件クリア。想起が retention でゲートされる創発挙動も確認済み。
 
 ### Phase 2 — Cognitive Core と「学習ループを閉じる」（次の大きな山）
 
