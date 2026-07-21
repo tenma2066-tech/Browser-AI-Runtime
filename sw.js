@@ -8,11 +8,12 @@
 //     ENABLE_COI を true にして挙動を実機比較する。
 const ENABLE_COI = false;
 
-const CACHE = 'bai-phase0-v1';
+const CACHE = 'bai-v2';
 // SW の場所を基準にした相対パス。GitHub Pages のサブパス配信でも動くようにする。
 const ASSETS = [
   './',
   './index.html',
+  './phase1.html',
   './manifest.webmanifest',
   './icon.svg',
   './src/probe/main.js',
@@ -21,6 +22,10 @@ const ASSETS = [
   './src/runtime/backend.js',
   './src/runtime/webgpu.js',
   './src/runtime/cpu.js',
+  './src/represent/encoder.js',
+  './src/memory/fabric.js',
+  './src/store/blobStore.js',
+  './src/app/phase1.js',
 ];
 
 self.addEventListener('install', (e) => {
