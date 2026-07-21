@@ -1,0 +1,12 @@
+{
+  "model": "ku-nlp/deberta-v2-tiny-japanese",
+  "vocab": 32000,
+  "dim": 192,
+  "quant": "int8-perrow",
+  "files": {
+    "emb": "emb.i8",
+    "scale": "emb.scale",
+    "tokenizer": "tokenizer.json"
+  },
+  "note": "frozen pretrained subword embeddings only (no transformer forward)"
+}
