@@ -6,7 +6,7 @@
 //
 // 注: 以前は cache-first だったため、ホーム画面 PWA が古いキャッシュを返して
 //     いた。network-first に変更し、CACHE 名も上げて旧キャッシュを破棄する。
-const CACHE = 'bai-v5';
+const CACHE = 'bai-v6';
 
 const ASSETS = [
   './',

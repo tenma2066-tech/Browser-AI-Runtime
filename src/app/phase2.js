@@ -142,11 +142,15 @@ function experience(text) {
 async function bidirectional() {
   if (S.core.step === 0) { prepEncoder(); await streamLearn(); }
   const stepBefore = S.core.step;
+  // 対照を常にクリーンにするため、この実験で書く記憶は実験後にロールバックする
+  // （④は非破壊のプローブ。①で貯まる本物のエピソード記憶には触れない）。
+  const base = S.fab.items.length;
   const before = await evalSeq(NOVEL2, false);
   const ctrl = await evalSeq(NOVEL2, true);   // 経験前: memory ON でも助からないはず
   experience(NOVEL2);                          // 一度だけ経験（重み不変）
   const after = await evalSeq(NOVEL2, true);   // 経験後: 想起が予測を助ける
-  log(`双方向ループ実験: "${NOVEL2}"`);
+  S.fab.items.length = base;                    // 実験で書いた連想を巻き戻す（再現性のため）
+  log(`双方向ループ実験（非破壊プローブ）: "${NOVEL2}"`);
   log(`  memory OFF          : surprise=${before.toFixed(3)}`);
   log(`  memory ON（経験前）  : surprise=${ctrl.toFixed(3)}（未経験なので下がらない）`);
   log(`  memory ON（経験後）  : surprise=${after.toFixed(3)}`);
