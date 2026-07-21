@@ -1,0 +1,20 @@
+{
+  "model": "intfloat/multilingual-e5-small",
+  "arch": "bert",
+  "hidden": 384,
+  "layers": 12,
+  "heads": 12,
+  "intermediate": 1536,
+  "vocab": 20763,
+  "pooling": "mean",
+  "l2norm": true,
+  "e5_prefix": {
+    "query": "query: ",
+    "passage": "passage: "
+  },
+  "quant": {
+    "emb": "int8-perrow",
+    "layerWeights": "int8-perrow",
+    "rest": "f32"
+  }
+}
