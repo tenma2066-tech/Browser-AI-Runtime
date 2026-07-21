@@ -109,7 +109,7 @@ for (const name of Object.keys(header)) {
   if (name.startsWith('pooler.')) continue;                  // E5 は mean pooling
   const t = header[name];
   const f32 = tensorF32(name);
-  if (QUANT.test(name)) {
+  if (QUANT.test(name) && !process.env.E5_FP32) {
     const [rows, cols] = t.shape;
     const { i8, sc } = quantRows(f32, rows, cols);
     push(name, 'i8', t.shape, Buffer.from(i8.buffer), Buffer.from(sc.buffer));
