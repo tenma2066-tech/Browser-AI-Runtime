@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Browser AI Runtime — Phase 2a 検証</title>
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <meta name="theme-color" content="#0b0f14" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="BAI Phase2" />
+  <link rel="apple-touch-icon" href="./icon.svg" />
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: max(env(safe-area-inset-top), 16px) 16px 32px; background: #0b0f14; color: #e6edf3; font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif; line-height: 1.5; }
+    h1 { font-size: 18px; margin: 0 0 4px; }
+    .sub { color: #8b98a5; font-size: 12px; margin-bottom: 12px; }
+    a { color: #79c0ff; }
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; background: #1f6feb22; border: 1px solid #1f6feb; color: #79c0ff; font-size: 12px; font-weight: 600; }
+    #env { font-size: 12px; margin: 10px 0; border: 1px solid #21262d; border-radius: 10px; padding: 6px 12px; }
+    #env > div { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid #161b22; }
+    #env > div:last-child { border-bottom: 0; }
+    #env .k { color: #8b98a5; }
+    input[type=text] { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #30363d; background: #010409; color: #e6edf3; font-size: 15px; margin: 8px 0; }
+    .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0; }
+    button { appearance: none; border: 1px solid #30363d; background: #21262d; color: #e6edf3; padding: 12px; border-radius: 10px; font-size: 14px; font-weight: 600; -webkit-tap-highlight-color: transparent; }
+    button:active { background: #30363d; }
+    button.primary { background: #1f6feb; border-color: #1f6feb; }
+    button.wide { grid-column: 1 / -1; }
+    #log { white-space: pre-wrap; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; background: #010409; border: 1px solid #21262d; border-radius: 10px; padding: 12px; height: 40vh; overflow-y: auto; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <h1>Browser AI Runtime — Phase 2a</h1>
+  <div class="sub">Cognitive Core（次文字予測）＋ 学習ループの閉じ ／
+    <a href="./index.html">メニュー</a> ・ <a href="./phase1.html">Phase 1 へ</a></div>
+  <div>backend: <span class="badge" id="backendKind">…</span></div>
+  <div id="env"></div>
+
+  <div class="btns">
+    <button class="primary wide" id="btnStream">① ストリーム学習（surprise が下がるか）</button>
+    <button id="btnEval">② 自己評価</button>
+    <button id="btnMem">③ 記憶を見る</button>
+  </div>
+  <input type="text" id="query" placeholder="想起クエリ" />
+  <div class="btns">
+    <button id="btnRecall">想起</button>
+    <button id="btnSelfTest">自己テスト bit一致</button>
+    <button id="btnSave">保存</button>
+    <button id="btnRestore">復元</button>
+    <button class="wide" id="btnReset">リセット</button>
+  </div>
+
+  <div id="log"></div>
+
+  <script type="module" src="./src/app/phase2.js"></script>
+  <script type="module">
+    const obs = new MutationObserver(() => {
+      const m = document.getElementById('log').textContent.match(/backend = (\w+)/);
+      if (m) { document.getElementById('backendKind').textContent = m[1]; obs.disconnect(); }
+    });
+    obs.observe(document.getElementById('log'), { childList: true, characterData: true, subtree: true });
+  </script>
+</body>
+</html>

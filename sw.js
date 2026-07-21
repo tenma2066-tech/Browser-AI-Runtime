@@ -6,13 +6,14 @@
 //
 // 注: 以前は cache-first だったため、ホーム画面 PWA が古いキャッシュを返して
 //     いた。network-first に変更し、CACHE 名も上げて旧キャッシュを破棄する。
-const CACHE = 'bai-v3';
+const CACHE = 'bai-v4';
 
 const ASSETS = [
   './',
   './index.html',
   './phase0.html',
   './phase1.html',
+  './phase2.html',
   './manifest.webmanifest',
   './icon.svg',
   './src/probe/main.js',
@@ -25,6 +26,8 @@ const ASSETS = [
   './src/memory/fabric.js',
   './src/store/blobStore.js',
   './src/app/phase1.js',
+  './src/cognition/core.js',
+  './src/app/phase2.js',
 ];
 
 self.addEventListener('install', (e) => {
