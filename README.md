@@ -12,8 +12,9 @@ AI 実行基盤**を研究・実装するプロジェクト。
 
 ## ステータス
 
-Phase 0（技術検証）に着手する段階。まだ実装コードは書いていない。まず設計を
-固める。
+**Phase 0（技術検証）完全合格**（2026-07-21、iPhone 実機で確認）。iOS standalone
+PWA で WebGPU 学習ループが回り、OPFS で bit 一致の永続化・復元ができることを実証。
+結果は [`docs/phase-0-results.md`](docs/phase-0-results.md)。次は Phase 1。
 
 ## ドキュメント
 
@@ -26,8 +27,8 @@ Phase 0（技術検証）に着手する段階。まだ実装コードは書い�
 ## ロードマップ
 
 ```
-Phase 0  技術検証: iOS PWA で GPU 学習ループ + 永続化/復元を1本通す  ← いまここ
-Phase 1  Runtime 抽象 + Representation(encode) + Memory Fabric 最小
+Phase 0  技術検証: iOS PWA で GPU 学習ループ + 永続化/復元を1本通す  ✅ 合格
+Phase 1  Runtime 抽象 + Representation(encode) + Memory Fabric 最小  ← いまここ
 Phase 2  Cognitive Core（1ステップ予測 + オンライン更新）
 Phase 3  Meta Cognition（予測誤差ベースの制御）
 Phase 4  AI Reporter を最初のアプリとして載せる
