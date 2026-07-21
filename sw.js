@@ -1,18 +1,17 @@
-// Phase 0 の Service Worker。目的は 2 つ:
-//   1) PWA としてオフライン起動できるよう、アプリシェルをキャッシュする。
-//   2) （将来）COOP/COEP 注入の実験口を残す。ただし Phase 0 では既定で無効。
+// Phase 0/1 の Service Worker。
 //
-// 注: SharedArrayBuffer / crossOriginIsolated を得るための COEP 注入（coi 方式）
-//     は WebGPU や外部リソース読み込みを壊すことがあり、iOS Safari では効かない
-//     ケースもある。Phase 0 では計測のみ行い、注入は行わない。必要になったら
-//     ENABLE_COI を true にして挙動を実機比較する。
-const ENABLE_COI = false;
+// 方針: **ネットワーク優先（network-first）**。開発中は「PWA 化すると古い版が
+// 出る」問題を避けるため、オンラインなら常に最新を取得し、失敗（オフライン）時
+// のみキャッシュへフォールバックする。取得できたものはキャッシュも更新する。
+//
+// 注: 以前は cache-first だったため、ホーム画面 PWA が古いキャッシュを返して
+//     いた。network-first に変更し、CACHE 名も上げて旧キャッシュを破棄する。
+const CACHE = 'bai-v3';
 
-const CACHE = 'bai-v2';
-// SW の場所を基準にした相対パス。GitHub Pages のサブパス配信でも動くようにする。
 const ASSETS = [
   './',
   './index.html',
+  './phase0.html',
   './phase1.html',
   './manifest.webmanifest',
   './icon.svg',
@@ -46,28 +45,16 @@ self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
 
+  // network-first: まずネットワーク、失敗時にキャッシュ。
   e.respondWith(
-    caches.match(req).then((cached) => {
-      const network = fetch(req)
-        .then((res) => {
-          // 同一オリジンの成功レスポンスは更新キャッシュ
-          if (res && res.ok && new URL(req.url).origin === self.location.origin) {
-            const copy = res.clone();
-            caches.open(CACHE).then((c) => c.put(req, copy));
-          }
-          return maybeCOI(res);
-        })
-        .catch(() => cached);
-      return cached ? maybeCOI(cached.clone()) : network;
-    })
+    fetch(req)
+      .then((res) => {
+        if (res && res.ok && new URL(req.url).origin === self.location.origin) {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(req, copy));
+        }
+        return res;
+      })
+      .catch(() => caches.match(req).then((c) => c || caches.match('./index.html')))
   );
 });
-
-// COEP/COOP を注入して cross-origin isolation を得る実験口（既定オフ）。
-function maybeCOI(res) {
-  if (!ENABLE_COI || !res) return res;
-  const headers = new Headers(res.headers);
-  headers.set('Cross-Origin-Embedder-Policy', 'require-corp');
-  headers.set('Cross-Origin-Opener-Policy', 'same-origin');
-  return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
-}
