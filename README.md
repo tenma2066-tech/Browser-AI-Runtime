@@ -38,7 +38,7 @@ HTML / CSS / JavaScript(TypeScript) のみで動く、**完全クライアント
 | **Phase 3a** | Meta Cognition（適応学習率 + 質問する） | ✅ 実機動作 |
 | **Phase 3b** | 概念化 / consolidate（経験を忘れても概念は残る） | ✅ 実機合格 |
 | **Phase 4** | AI Reporter（統合アプリ・現状 substrate のまま製品の形に） | ⬜ 次 |
-| **Phase 5** | 大型 substrate を GitHub に + WebGPU forward | ⬜ 将来 |
+| **Phase 5** | 大型 substrate を GitHub に + WebGPU forward（任意の上位層） | ⬜ 将来 |
 
 ### 検証ページ（GitHub Pages）
 
@@ -113,9 +113,11 @@ HTML / CSS / JavaScript(TypeScript) のみで動く、**完全クライアント
   を質問（能動学習）。
 - 成長物（重み・記憶・概念・人格）はローカル永続化。使うほど各ユーザーで育つ。
 
-### Phase 5 — 大型 substrate を GitHub に + WebGPU forward（将来）
+### Phase 5 — 大型 substrate を GitHub に + WebGPU forward（将来・任意の上位層）
 
-言語品質を本格的に上げる infra 投資（ADR-0002 の制約に従う）。
+基本はオンデバイス実行（Apple Intelligence 的）。GitHub の大型モデルは**載る端末で
+だけ使う任意の上位層**で、無くても製品は成立する。言語品質を上げる infra 投資
+（ADR-0002 の制約に従う）。
 
 1. **iOS 最大モデルサイズの実機スパイク**（どこまで載る/回るか確定）。
 2. **GitHub Releases で大型モデル配信 + OPFS キャッシュ**（初回 fetch → 以後ローカル）。
