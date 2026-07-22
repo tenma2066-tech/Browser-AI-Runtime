@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Browser AI Runtime — Phase 2c 検証</title>
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <meta name="theme-color" content="#0b0f14" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="BAI Phase2c" />
+  <link rel="apple-touch-icon" href="./icon.svg" />
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: max(env(safe-area-inset-top), 16px) 16px 32px; background: #0b0f14; color: #e6edf3; font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif; line-height: 1.5; }
+    h1 { font-size: 18px; margin: 0 0 4px; }
+    .sub { color: #8b98a5; font-size: 12px; margin-bottom: 12px; }
+    a { color: #79c0ff; }
+    input[type=text] { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #30363d; background: #010409; color: #e6edf3; font-size: 15px; margin: 8px 0; }
+    .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0; }
+    button { appearance: none; border: 1px solid #30363d; background: #21262d; color: #e6edf3; padding: 12px; border-radius: 10px; font-size: 14px; font-weight: 600; -webkit-tap-highlight-color: transparent; }
+    button:active { background: #30363d; }
+    button:disabled { opacity: .4; }
+    button.primary { background: #1f6feb; border-color: #1f6feb; }
+    button.wide { grid-column: 1 / -1; }
+    #log { white-space: pre-wrap; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; background: #010409; border: 1px solid #21262d; border-radius: 10px; padding: 12px; height: 46vh; overflow-y: auto; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <h1>Browser AI Runtime — Phase 2c</h1>
+  <div class="sub">Subword Core（substrate を凍結入力＋出力ヘッドに）で意味空間予測 ／
+    <a href="./index.html">メニュー</a> ・ <a href="./phase2.html">Phase 2a へ</a></div>
+
+  <div class="btns">
+    <button class="primary wide" id="btnLoad">substrate 読込（静的 deberta 7MB）</button>
+    <button class="primary" id="btnTrain">学習 +8ep</button>
+    <button id="btnSelfTest">自己テスト bit一致</button>
+  </div>
+  <input type="text" id="ctx" placeholder="文脈（例: 犬が）" />
+  <div class="btns">
+    <button class="primary wide" id="btnPredict">次 subword を予測（意味空間）</button>
+  </div>
+
+  <div id="log"></div>
+
+  <script type="module" src="./src/app/phase2c.js"></script>
+</body>
+</html>
