@@ -37,8 +37,9 @@ HTML / CSS / JavaScript(TypeScript) のみで動く、**完全クライアント
 | **Phase 2c** | substrate を Core の予測に統合（subword 粒度・意味空間予測） | ✅ 実機動作 |
 | **Phase 3a** | Meta Cognition（適応学習率 + 質問する） | ✅ 実機動作 |
 | **Phase 3b** | 概念化 / consolidate（経験を忘れても概念は残る） | ✅ 実機合格 |
-| **Phase 4** | AI Reporter（統合アプリ・現状 substrate のまま製品の形に） | ⬜ 次 |
-| **Phase 5** | 大型 substrate を GitHub に + WebGPU forward（任意の上位層） | ⬜ 将来 |
+| **Phase 4** | AI Reporter（統合アプリ・記録→テーマ/注目/質問） | ✅ 実機動作 |
+| **Phase 5** | 生成能力（小型因果 LM を自前実装・クライアント推論・WebGPU） | ⬜ 次 |
+| （継続） | 大型 substrate を無料 CDN に（任意の上位層）／WebGPU Runtime | ⬜ 将来 |
 
 ### 検証ページ（GitHub Pages）
 
@@ -113,11 +114,22 @@ HTML / CSS / JavaScript(TypeScript) のみで動く、**完全クライアント
   を質問（能動学習）。
 - 成長物（重み・記憶・概念・人格）はローカル永続化。使うほど各ユーザーで育つ。
 
-### Phase 5 — 大型 substrate を GitHub に + WebGPU forward（将来・任意の上位層）
+### Phase 5 — 生成能力（GPT 的に使う。小型因果 LM を自前実装・クライアント推論）
 
-基本はオンデバイス実行（Apple Intelligence 的）。GitHub の大型モデルは**載る端末で
-だけ使う任意の上位層**で、無くても製品は成立する。言語品質を上げる infra 投資
-（ADR-0002 の制約に従う）。
+「普通に GPT 的に使いたい」に応える段。エンコーダ（deberta/e5）は生成しないので、
+**因果デコーダ（生成）LM を新規に自前実装**する。完全クライアント推論・自作エンジン
+（既存 AI API のラッパーにしない）。品質は端末制約内（GPT-3.5 級には届かない）で
+妥協するが、**ユーザーの記憶・概念・人格に接地した生成**という独自価値を出す。
+計画は [`docs/phase-5-plan.md`](docs/phase-5-plan.md)、方針は
+[`docs/ADR-0003-generation-and-server.md`](docs/ADR-0003-generation-and-server.md)。
+
+- **5a**: iOS WebGPU 生成の実現性スパイク（載るサイズ・tokens/sec）← 最初に潰す。
+- **5b**: 小型因果 LM 抽出 + forward + KV キャッシュ + サンプリング（WebGPU）。
+- **5c**: 記憶接地生成（RAG）+ チャット UI ＝「GPT 的だがユーザーごとに育つ」。
+
+サーバー方針: 「多人数でも無料」は推論をクライアントに置くことを要求する（サーバー
+推論は無料でスケールしない）。サーバー/通信は無料でできる軽いこと（モデル配信の
+無料 CDN、将来の同期・Pack 共有）に限定して許可（ADR-0003）。
 
 1. **iOS 最大モデルサイズの実機スパイク**（どこまで載る/回るか確定）。
 2. **GitHub Releases で大型モデル配信 + OPFS キャッシュ**（初回 fetch → 以後ローカル）。
@@ -186,4 +198,6 @@ docs/                       ADR・各 Phase の仕様/結果
   （3本の柱・substrate・レイヤーのデータ契約・既知リスク）
 - [`docs/ADR-0002-product-direction.md`](docs/ADR-0002-product-direction.md) —
   最終目的の明確化・大型 substrate を GitHub に置く方針と制約
-- Phase 仕様/結果: `docs/phase-0-*` … `docs/phase-3b-*`（各 spec と results）
+- [`docs/ADR-0003-generation-and-server.md`](docs/ADR-0003-generation-and-server.md) —
+  生成能力の追加とサーバー制約の条件付き緩和
+- Phase 仕様/結果: `docs/phase-0-*` … `docs/phase-4-*`、`docs/phase-5-plan.md`
