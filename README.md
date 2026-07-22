@@ -23,7 +23,7 @@ HTML / CSS / JavaScript(TypeScript) のみで動く、**完全クライアント
 | **Phase 2a** | Cognitive Core（次文字予測）+ 学習ループを閉じる（双方向ループ含む） | ✅ **実機合格**（2026-07-21） |
 | **Phase 2b** | substrate（静的埋め込み）を Representation に差し込み | ✅ **実機合格**（2026-07-21） |
 | **Phase 2b-2** | e5-small forward を自前実装（12層BERT文モデル） | ✅ **実機動作**（2026-07-21） |
-| Phase 3 | Meta Cognition（予測誤差ベースの自己制御） | ⬜ |
+| **Phase 3a** | Meta Cognition（適応学習率＋質問する） | ✅ **実機動作**（2026-07-22） |
 | Phase 4 | AI Reporter を最初のアプリとして載せる | ⬜ |
 
 **検証ページ**（GitHub Pages）:
