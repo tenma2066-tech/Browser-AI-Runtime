@@ -46,7 +46,10 @@ export class AIReporter {
       let maxc = -1; for (const ce of cen) { const c = cos(cv, ce); if (c > maxc) maxc = c; }
       novelty = Math.max(0, Math.min(1, (1 - maxc) / 1.2)); // 中心化cos≈[-0.2,0.5]を[0,1]へ寄せる
     }
-    this.fab.write(v, { text, salience: novelty, plasticity: 0.7 });
+    // 注目度（novelty）が高い出来事ほど可塑性を下げる＝忘れにくくする。
+    // 感情的に重要な記憶が残るのと同じ。平凡な出来事ほど速く薄れる。
+    const plasticity = Math.max(0.3, Math.min(0.9, 0.9 - 0.5 * novelty));
+    this.fab.write(v, { text, salience: novelty, plasticity });
     let question = null;
     if (eps.length >= 3 && novelty >= this.questionNovelty) {
       question = { text, novelty, prompt: `「${text}」——これまでに無い新しい話題ですね。もう少し教えてください。` };
