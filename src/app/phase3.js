@@ -45,7 +45,11 @@ function familiar() {
     }
   }
   const fam = factors.reduce((a, b) => a + b, 0) / factors.length;
-  log(`① 馴染み(雨)学習: 雨surprise=${avgSurprise(S.core, RAIN).toFixed(3)}  基準emaSurprise=${S.meta.emaSurprise.toFixed(3)}  lrFactor平均=${fam.toFixed(2)}（≈1で安定）`);
+  // 較正: 学習して到達した水準を基準にする（その領域に習熟したことの認識。
+  // 長い定常ストリームで EMA が収束するのと同じ効果を短時間で得る）。
+  const rainSurp = avgSurprise(S.core, RAIN);
+  S.meta.emaSurprise = rainSurp; S.meta.window = [];
+  log(`① 馴染み(雨)学習: 雨surprise=${rainSurp.toFixed(3)}  基準を較正=${rainSurp.toFixed(3)}  lrFactor平均=${fam.toFixed(2)}（≈1で安定）`);
 }
 
 // ② 新規(動物)注入: 固定lr と Meta制御 を並走。適応速度と質問を観測。
