@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>AI Reporter — Browser AI Runtime</title>
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <meta name="theme-color" content="#0b0f14" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="AI Reporter" />
+  <link rel="apple-touch-icon" href="./icon.svg" />
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: max(env(safe-area-inset-top), 16px) 16px 32px; background: #0b0f14; color: #e6edf3; font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif; line-height: 1.5; }
+    h1 { font-size: 18px; margin: 0 0 4px; }
+    .sub { color: #8b98a5; font-size: 12px; margin-bottom: 12px; }
+    a { color: #79c0ff; }
+    input[type=text] { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #30363d; background: #010409; color: #e6edf3; font-size: 15px; margin: 8px 0; }
+    .btns { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin: 8px 0; }
+    button { appearance: none; border: 1px solid #30363d; background: #21262d; color: #e6edf3; padding: 12px 8px; border-radius: 10px; font-size: 13px; font-weight: 600; -webkit-tap-highlight-color: transparent; }
+    button:active { background: #30363d; }
+    button:disabled { opacity: .4; }
+    button.primary { background: #1f6feb; border-color: #1f6feb; }
+    button.wide { grid-column: 1 / -1; }
+    #log { white-space: pre-wrap; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; background: #010409; border: 1px solid #21262d; border-radius: 10px; padding: 12px; height: 46vh; overflow-y: auto; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <h1>AI Reporter</h1>
+  <div class="sub">あなたの記録からテーマ・注目・気づきを返す（完全ローカル・使うほど育つ）／
+    <a href="./index.html">メニュー</a></div>
+
+  <div class="btns">
+    <button class="primary wide" id="btnLoad">起動（AI Reporter を読み込む・約31MB）</button>
+  </div>
+  <input type="text" id="entry" placeholder="今日の出来事・思ったことを書く" />
+  <div class="btns">
+    <button class="primary" id="btnAdd">記録</button>
+    <button id="btnSample">サンプル投入</button>
+    <button id="btnConsolidate">概念化</button>
+    <button id="btnForget">時間経過</button>
+    <button class="primary" id="btnReport">レポート</button>
+    <button id="btnSave">保存</button>
+  </div>
+
+  <div id="log"></div>
+
+  <script type="module" src="./src/app/phase4.js"></script>
+</body>
+</html>
