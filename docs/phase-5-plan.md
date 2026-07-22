@@ -31,9 +31,11 @@ Runtime の WebGPU 経路（テンソル常駐・matmul カーネル）への投
 5a が通ったら本体を作る。
 
 - **モデル候補**: rinna/japanese-gpt2-small（~110M・hidden768・12層・SentencePiece・
-  MeCab 非依存）等。サイズが iOS に厳しければより小さいものへ。
+  MeCab 非依存）等。**小型に保つ**（GitHub Pages: 単一ファイル 100MB 制約。必要なら
+  チャンク分割・量子化強化・より小さいモデルへ）。サイズが iOS に厳しければ縮小。
 - **抽出**（tools/, e5 と同様）: 重みを range/stream 取得 → 量子化（int8）→ compact
-  形式で配信（無料 CDN も選択肢）。トークナイザは既存 unigram Viterbi を流用。
+  形式で **GitHub Pages に配信**（OPFS キャッシュで再訪はローカル）。トークナイザは
+  既存 unigram Viterbi を流用。
 - **因果デコーダ forward**（自前）: token+position 埋め込み → N×[**causal** self-
   attention + FFN + LN] → final LN → LM ヘッド（tied 埋め込みで語彙 logits）。
   e5.js の attention/LN/GELU を土台に、**causal マスク**と**生成**を追加。
@@ -48,8 +50,13 @@ Runtime の WebGPU 経路（テンソル常駐・matmul カーネル）への投
 
 生成を、これまで作った自己成長層に接続する。ここが独自価値。
 
+- **知識は GitHub データ + RAG**: 学習データ/知識を GitHub に置き（バージョン管理・
+  更新可能）、埋め込みを用意しておく。生成時に入力へ関連部分を**想起**して
+  プロンプトに挿入。**知識はモデルの大きさでなくデータで持ち、増やせば増える**。
+  検索基盤は既存の Memory Fabric・埋め込み・想起を流用。
 - **記憶接地**: ユーザー入力に関連する記憶・概念・人格（Memory Fabric から想起）を
   文脈としてプロンプトに挿入して生成 → **そのユーザーだけの文脈で答える**。
+  （＝ GitHub 知識データ ⊕ ローカル個人記憶 の二源で接地する。）
 - **成長ループとの接続**: 会話も経験として記銘（Phase 2a の驚きベース）、概念化
   （Phase 3b）、Meta の質問（Phase 3a）。使うほど各ユーザーで育つ。
 - **チャット UI**: 会話形式。ローカル永続化で継続。
