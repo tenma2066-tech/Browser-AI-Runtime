@@ -29,72 +29,77 @@ export class CognitiveCore {
 
   reset() { this.h.fill(0); }
 
-  // 1 ステップ。idx = 現在の文字、targetIdx = 実際の次の文字。
-  // learn=true なら truncated BPTT(1) で更新。戻り値 = surprise。
-  observe(encoder, idx, targetIdx, learn = true) {
-    const { D, H, lr } = this;
-    const V = encoder.size;
-    this.V = V;
+  // 「思考」: 1 ステップの forward。surprise と entropy を返し、更新用の活性を
+  // キャッシュして h を前進する。学習はしない（applyGradient で行う）。
+  // これにより「surprise を見てから lr を決めて学ぶ」メタ制御が可能になる。
+  forward(encoder, idx, targetIdx) {
+    const { D, H } = this;
+    const V = encoder.size; this.V = V;
     const x = encoder.E.subarray(idx * D, idx * D + D); // 凍結入力特徴
     const hPrev = this.h;
 
-    // forward: 隠れ状態
-    const pre = new Float32Array(H);
+    const hNew = new Float32Array(H);
     for (let i = 0; i < H; i++) {
       let sum = this.bh[i];
       const wr = i * D; for (let d = 0; d < D; d++) sum += this.Wxh[wr + d] * x[d];
       const hr = i * H; for (let j = 0; j < H; j++) sum += this.Whh[hr + j] * hPrev[j];
-      pre[i] = sum;
+      hNew[i] = Math.tanh(sum);
     }
-    const hNew = new Float32Array(H);
-    for (let i = 0; i < H; i++) hNew[i] = Math.tanh(pre[i]);
-
-    // forward: 語彙 logits と softmax
-    const logits = new Float32Array(V);
+    const probs = new Float32Array(V);
     let mx = -Infinity;
     for (let v = 0; v < V; v++) {
       let sum = this.by[v]; const r = v * H;
       for (let i = 0; i < H; i++) sum += this.Why[r + i] * hNew[i];
-      logits[v] = sum; if (sum > mx) mx = sum;
+      probs[v] = sum; if (sum > mx) mx = sum;
     }
     let Z = 0;
-    for (let v = 0; v < V; v++) { logits[v] = Math.exp(logits[v] - mx); Z += logits[v]; }
-    const surprise = -Math.log(logits[targetIdx] / Z + 1e-12);
+    for (let v = 0; v < V; v++) { probs[v] = Math.exp(probs[v] - mx); Z += probs[v]; }
+    for (let v = 0; v < V; v++) probs[v] /= Z;
+    const surprise = -Math.log(probs[targetIdx] + 1e-12);
+    let entropy = 0;
+    for (let v = 0; v < V; v++) { const p = probs[v]; if (p > 1e-12) entropy -= p * Math.log(p); }
 
-    if (learn) {
-      // dlogits = softmax - onehot(target)
-      const dlog = logits;
-      for (let v = 0; v < V; v++) dlog[v] /= Z;
-      dlog[targetIdx] -= 1;
-
-      // dh = Why^T · dlog（更新前の Why を使う）、同時に by を更新
-      const dh = new Float32Array(H);
-      for (let v = 0; v < V; v++) {
-        const dv = dlog[v]; const r = v * H;
-        for (let i = 0; i < H; i++) dh[i] += dv * this.Why[r + i];
-        this.by[v] -= lr * dv;
-      }
-      // Why 更新
-      for (let v = 0; v < V; v++) {
-        const dv = dlog[v]; if (dv === 0) continue;
-        const r = v * H; const g = lr * dv;
-        for (let i = 0; i < H; i++) this.Why[r + i] -= g * hNew[i];
-      }
-      // tanh を通す
-      const dpre = new Float32Array(H);
-      for (let i = 0; i < H; i++) dpre[i] = dh[i] * (1 - hNew[i] * hNew[i]);
-      // Wxh / Whh / bh 更新（h_{t-1} は定数扱い = truncated BPTT(1)）
-      for (let i = 0; i < H; i++) {
-        const gp = lr * dpre[i];
-        const wr = i * D; for (let d = 0; d < D; d++) this.Wxh[wr + d] -= gp * x[d];
-        const hr = i * H; for (let j = 0; j < H; j++) this.Whh[hr + j] -= gp * hPrev[j];
-        this.bh[i] -= gp;
-      }
-      this.step++;
-    }
-
+    this._cache = { x, hPrev, hNew, probs, target: targetIdx, V };
     this.h = hNew; // 状態を前進
-    return surprise;
+    return { surprise, entropy };
+  }
+
+  // 「学習」: 直前の forward のキャッシュから truncated BPTT(1) で更新（lr は外から）。
+  applyGradient(lr) {
+    const c = this._cache; if (!c) return;
+    const { D, H } = this;
+    const { x, hPrev, hNew, probs, target, V } = c;
+    const dlog = new Float32Array(V);
+    for (let v = 0; v < V; v++) dlog[v] = probs[v];
+    dlog[target] -= 1;
+
+    const dh = new Float32Array(H);
+    for (let v = 0; v < V; v++) {
+      const dv = dlog[v]; const r = v * H;
+      for (let i = 0; i < H; i++) dh[i] += dv * this.Why[r + i];
+      this.by[v] -= lr * dv;
+    }
+    for (let v = 0; v < V; v++) {
+      const dv = dlog[v]; if (dv === 0) continue;
+      const r = v * H; const g = lr * dv;
+      for (let i = 0; i < H; i++) this.Why[r + i] -= g * hNew[i];
+    }
+    const dpre = new Float32Array(H);
+    for (let i = 0; i < H; i++) dpre[i] = dh[i] * (1 - hNew[i] * hNew[i]);
+    for (let i = 0; i < H; i++) {
+      const gp = lr * dpre[i];
+      const wr = i * D; for (let d = 0; d < D; d++) this.Wxh[wr + d] -= gp * x[d];
+      const hr = i * H; for (let j = 0; j < H; j++) this.Whh[hr + j] -= gp * hPrev[j];
+      this.bh[i] -= gp;
+    }
+    this.step++;
+  }
+
+  // 従来互換: forward → learn なら applyGradient(this.lr) → surprise(number) を返す。
+  observe(encoder, idx, targetIdx, learn = true) {
+    const r = this.forward(encoder, idx, targetIdx);
+    if (learn) this.applyGradient(this.lr);
+    return r.surprise;
   }
 
   // パラメトリック予測分布を返す（学習しない）。h は前進する。

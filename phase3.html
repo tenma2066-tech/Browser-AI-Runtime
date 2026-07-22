@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Browser AI Runtime — Phase 3a 検証</title>
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <meta name="theme-color" content="#0b0f14" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="BAI Phase3" />
+  <link rel="apple-touch-icon" href="./icon.svg" />
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: max(env(safe-area-inset-top), 16px) 16px 32px; background: #0b0f14; color: #e6edf3; font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif; line-height: 1.5; }
+    h1 { font-size: 18px; margin: 0 0 4px; }
+    .sub { color: #8b98a5; font-size: 12px; margin-bottom: 12px; }
+    a { color: #79c0ff; }
+    .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0; }
+    button { appearance: none; border: 1px solid #30363d; background: #21262d; color: #e6edf3; padding: 12px; border-radius: 10px; font-size: 14px; font-weight: 600; -webkit-tap-highlight-color: transparent; }
+    button:active { background: #30363d; }
+    button.primary { background: #1f6feb; border-color: #1f6feb; }
+    button.wide { grid-column: 1 / -1; }
+    #log { white-space: pre-wrap; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; background: #010409; border: 1px solid #21262d; border-radius: 10px; padding: 12px; height: 52vh; overflow-y: auto; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <h1>Browser AI Runtime — Phase 3a</h1>
+  <div class="sub">Meta Cognition: 適応学習率 ＋ 質問する ／
+    <a href="./index.html">メニュー</a> ・ <a href="./phase2.html">Phase 2a へ</a></div>
+
+  <div class="btns">
+    <button class="primary" id="btnFam">① 馴染み学習（雨）</button>
+    <button class="primary" id="btnInject">② 新規注入（動物）</button>
+    <button id="btnSelfTest">自己テスト bit一致</button>
+    <button id="btnReset">リセット</button>
+  </div>
+
+  <div id="log"></div>
+
+  <script type="module" src="./src/app/phase3.js"></script>
+</body>
+</html>
