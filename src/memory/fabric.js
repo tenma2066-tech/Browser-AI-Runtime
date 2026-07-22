@@ -9,8 +9,8 @@
 // 想起の類似度計算（クエリ × 全記憶）は Runtime の matmul を使う。これは将来
 // GPU 常駐に載せたい"大きめの計算"であり、Runtime 抽象をここで行使する。
 
-const MAGIC = 0x4241464e; // "BAFN"（assoc 追加で形式更新）
-const PROV = ['perception', 'derived', 'pack'];
+const MAGIC = 0x4241464f; // "BAFO"（count 追加で形式更新）
+const PROV = ['perception', 'derived', 'pack', 'concept'];
 
 const now = () => (typeof performance !== 'undefined' && performance.now
   ? performance.now() : Date.now());
@@ -40,6 +40,7 @@ export class MemoryFabric {
       lastAccess: t,
       accessCount: 0,
       assoc: attrs.assoc ?? -1, // 連想値（例: 次文字のトークンID）。-1 = なし
+      count: attrs.count ?? 1,  // 概念が統合したエピソード数（エピソードは 1）
       text: attrs.text ?? '',
     };
     this.items.push(item);
@@ -94,13 +95,53 @@ export class MemoryFabric {
     return { count: N, avgRetention: N ? sum / N : 0, minRetention: N ? min : 0, maxRetention: max, tick: this.tick };
   }
 
+  // 概念化: 似たエピソードをクラスタ化し、centroid を「概念」memory として書く。
+  // 概念は低可塑（忘れにくい）、元エピソードは高可塑化＋retention 低下で薄れさせる。
+  // → 個別経験は忘れても概念は残る（忘却と一般化の両立）。
+  consolidate({ sim = 0.15, minCluster = 2 } = {}) {
+    const D = this.D;
+    const cos = (a, b) => { let d = 0; for (let i = 0; i < D; i++) d += a[i] * b[i]; return d; };
+    const eps = this.items.filter((x) => x.provenance !== 'concept');
+    // 平均除去（共通成分を引いて再正規化）でクラスタリング用の類似度を鋭くする。
+    // 埋め込み空間の異方性（全ペアが高 cos になる偏り）を取り除く。
+    // ※ 類似度判定にのみ使い、概念 centroid は元ベクトルから作る（想起空間を保つ）。
+    const mean = new Float32Array(D);
+    for (const e of eps) for (let d = 0; d < D; d++) mean[d] += e.vector[d] / (eps.length || 1);
+    const cen = eps.map((e) => {
+      const o = new Float32Array(D); let n = 0;
+      for (let d = 0; d < D; d++) { o[d] = e.vector[d] - mean[d]; n += o[d] * o[d]; }
+      n = Math.sqrt(n) || 1; for (let d = 0; d < D; d++) o[d] /= n; return o;
+    });
+    const used = new Set();
+    let concepts = 0, clustered = 0;
+    for (let i = 0; i < eps.length; i++) {
+      if (used.has(i)) continue;
+      const members = [i]; used.add(i);
+      for (let j = i + 1; j < eps.length; j++) {
+        if (used.has(j)) continue;
+        if (cos(cen[i], cen[j]) >= sim) { members.push(j); used.add(j); }
+      }
+      if (members.length < minCluster) { used.delete(i); continue; } // 単独は概念化しない
+      // centroid（元ベクトルの平均）→ L2 正規化。想起空間を保つため元ベクトルから作る。
+      const centroid = new Float32Array(D);
+      for (const m of members) { const v = eps[m].vector; for (let d = 0; d < D; d++) centroid[d] += v[d]; }
+      let nrm = 0; for (let d = 0; d < D; d++) { centroid[d] /= members.length; nrm += centroid[d] * centroid[d]; }
+      nrm = Math.sqrt(nrm) || 1; for (let d = 0; d < D; d++) centroid[d] /= nrm;
+      const texts = members.map((m) => eps[m].text).filter(Boolean).slice(0, 3);
+      this.write(centroid, { provenance: 'concept', plasticity: 0.05, retention: 1.0, salience: 1, count: members.length, text: '概念: ' + texts.join(' / ') });
+      for (const m of members) { eps[m].plasticity = 0.95; eps[m].retention *= 0.6; } // 薄れさせる
+      concepts++; clustered += members.length;
+    }
+    return { concepts, clustered };
+  }
+
   // --- 直列化（bit 一致復元）------------------------------------------------
   serialize() {
     const D = this.D;
     const enc = new TextEncoder();
     const textBytes = this.items.map((it) => enc.encode(it.text || ''));
-    const perItem = (i) => 4 * 5 + 4 * 3 + 8 * 2 + D * 4 + textBytes[i].length;
-    //             id/prov/acc/textLen/assoc  plast/ret/sal  created/last  vector  text
+    const perItem = (i) => 4 * 6 + 4 * 3 + 8 * 2 + D * 4 + textBytes[i].length;
+    //         id/prov/acc/textLen/assoc/count  plast/ret/sal  created/last  vector  text
     let total = 32; // header
     for (let i = 0; i < this.items.length; i++) total += perItem(i);
     const buf = new ArrayBuffer(total);
@@ -121,6 +162,7 @@ export class MemoryFabric {
       dv.setInt32(off, it.accessCount, true); off += 4;
       dv.setInt32(off, tb.length, true); off += 4;
       dv.setInt32(off, it.assoc ?? -1, true); off += 4;
+      dv.setInt32(off, it.count ?? 1, true); off += 4;
       dv.setFloat32(off, it.plasticity, true); off += 4;
       dv.setFloat32(off, it.retention, true); off += 4;
       dv.setFloat32(off, it.salience, true); off += 4;
@@ -152,6 +194,7 @@ export class MemoryFabric {
       const accessCount = dv.getInt32(off, true); off += 4;
       const textLen = dv.getInt32(off, true); off += 4;
       const assoc = dv.getInt32(off, true); off += 4;
+      const count = dv.getInt32(off, true); off += 4;
       const plasticity = dv.getFloat32(off, true); off += 4;
       const retention = dv.getFloat32(off, true); off += 4;
       const salience = dv.getFloat32(off, true); off += 4;
@@ -161,7 +204,7 @@ export class MemoryFabric {
       for (let d = 0; d < D; d++) { vector[d] = dv.getFloat32(off, true); off += 4; }
       const text = textLen ? dec.decode(new Uint8Array(buf, off, textLen)) : ''; off += textLen;
       fabric.items.push({
-        id, provenance: PROV[prov] || 'perception', accessCount, assoc,
+        id, provenance: PROV[prov] || 'perception', accessCount, assoc, count,
         plasticity, retention, salience, createdAt, lastAccess, vector, text,
       });
     }
